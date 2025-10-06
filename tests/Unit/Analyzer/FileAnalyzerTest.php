@@ -24,7 +24,7 @@ final class FileAnalyzerTest extends TestCase
         [$path, $onlyFuncName] = Testdata::getPathAndFuncName(__METHOD__);
 
         var_dump($path);
-        $path = $path . 'LowUsesHigh/Low.php';
+        $path = $path . 'LowUsesHigh/Low/Low.php';
         $fileInfo = new SplFileInfo($path);
         $res = $fa->analyzeFile($config, $fileInfo);
         self::assertCount(0, $res->errors);
@@ -39,7 +39,7 @@ final class FileAnalyzerTest extends TestCase
         [$path, $onlyFuncName] = Testdata::getPathAndFuncName(__METHOD__);
 
         var_dump($path);
-        $path = $path . 'HighUsesLow/High.php';
+        $path = $path . 'HighUsesLow/High/High.php';
         $fileInfo = new SplFileInfo($path);
         $res = $fa->analyzeFile($config, $fileInfo);
         self::assertCount(1, $res->errors);
