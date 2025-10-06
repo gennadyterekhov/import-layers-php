@@ -31,7 +31,6 @@ final class AnalyzerTest extends TestCase
 
         [$path, $onlyFuncName] = Testdata::getPathAndFuncName(__METHOD__);
 
-        var_dump($path);
         $path = $path . 'LowUsesHigh/Low/Low.php';
         $fileInfo = new SplFileInfo($path);
         $res = $service->analyzeFile($config, $fileInfo);
@@ -46,7 +45,6 @@ final class AnalyzerTest extends TestCase
 
         [$path, $onlyFuncName] = Testdata::getPathAndFuncName(__METHOD__);
 
-        var_dump($path);
         $path = $path . 'HighUsesLow/High/High.php';
         $fileInfo = new SplFileInfo($path);
         $res = $service->analyzeFile($config, $fileInfo);
