@@ -2,14 +2,17 @@
 
 namespace Gennadyterekhov\ImportLayersPhp;
 
-use PhpParser\ParserFactory;
-use PhpParser\PrettyPrinter;
+use Gennadyterekhov\ImportLayersPhp\Config\ConfigService;
 use PhpParser\NodeTraverser;
 use PhpParser\NodeVisitor\NameResolver;
+use PhpParser\ParserFactory;
+use PhpParser\PrettyPrinter;
 
 final class App
 {
-    public function __construct() {}
+    public function __construct(
+        private ConfigService $configService,
+    ) {}
 
     public function do(): void
     {
@@ -54,4 +57,12 @@ final class App
         }
 
     }
+
+    public function checkImportLayers(): void
+    {
+
+        $config = $this->configService->readConfigFromFileIntoDto();
+
+    }
+
 }
