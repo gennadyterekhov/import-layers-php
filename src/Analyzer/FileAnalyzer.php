@@ -40,7 +40,6 @@ final readonly class FileAnalyzer
                 }
             }
         } catch (Throwable $exception) {
-            echo 'Parse Error: ', $exception->getMessage();
             $errors[] = $exception->getMessage();
         }
 
