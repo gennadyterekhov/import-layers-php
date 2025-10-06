@@ -14,7 +14,7 @@ config
     {
         "layers": [
             "high",
-            "low",
+            "low"
         ]
     }
 
