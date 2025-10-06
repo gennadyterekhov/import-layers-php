@@ -30,7 +30,6 @@ final readonly class Analyzer
             try {
                 $this->fileAnalyzer->analyzeFile($config, $file);
             } catch (Throwable $exception) {
-                echo 'Parse Error: ', $exception->getMessage();
                 $errors[] = $exception->getMessage();
             }
         }
