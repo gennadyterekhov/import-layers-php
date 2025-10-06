@@ -6,41 +6,29 @@ namespace Gennadyterekhov\ImportLayersPhp\Dto;
 
 final readonly class Config
 {
-    private array $layerNameToNumber;
-
     public function __construct(
         public bool $debug = false,
         public bool $ignoreTests = false,
         public array $layers = [],
     )
     {
-        $this->layerNameToNumber = $this->createMap();
-    }
-
-    private function createMap(): array
-    {
-        $map = [];
-        $total = count($this->layers);
-        for ($i = 0; $i < $total; $i++) {
-            $layerName = $this->layers[$i];
-            $map[$layerName] = $i;
-        }
-
-        return $map;
     }
 
     public function getLayer(string $namespace): int
     {
-        if (!array_key_exists($namespace, $this->layerNameToNumber)) {
-            return 0;
+        foreach ($this->layers as $index => $layer) {
+            if (str_contains($namespace, $layer)) {
+                return $index;
+            }
         }
-        return $this->layerNameToNumber[$namespace];
+        return 0;
     }
 
-    public function isOk(string $namespace, string $layerThatYoureTryingToImport): bool
+    public function isOk(string $namespace, string $layer): bool
     {
         $currentLayer = $this->getLayer($namespace);
-        $layerThatYoureTryingToImport = $this->getLayer($layerThatYoureTryingToImport);
-        return $currentLayer <= $layerThatYoureTryingToImport;
+        $layerThatYoureTryingToImport = $this->getLayer($layer);
+
+        return $currentLayer >= $layerThatYoureTryingToImport;
     }
 }
