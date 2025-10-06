@@ -2,7 +2,12 @@
 
 require_once __DIR__ . '/../vendor/autoload.php';
 
-use Gennadyterekhov\ImportLayersPhp\App;
+use Gennadyterekhov\ImportLayersPhp\Analyzer\Analyzer;
+use Gennadyterekhov\ImportLayersPhp\Config\ConfigService;
+use PhpParser\ParserFactory;
 
-$app = new App();
-$app->do();
+$service = new ConfigService();
+$config = $service->readConfigFromFileIntoDto();
+$parser = (new ParserFactory())->createForHostVersion();
+$analyzer = new Analyzer($parser, $config);
+$analyzer->analyze();
