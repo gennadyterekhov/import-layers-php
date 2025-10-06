@@ -10,9 +10,7 @@ final readonly class Config
         public bool $debug = false,
         public bool $ignoreTests = false,
         public array $layers = [],
-    )
-    {
-    }
+    ) {}
 
     public function getLayer(string $namespace): int
     {
