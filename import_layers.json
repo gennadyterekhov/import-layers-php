@@ -1,0 +1,12 @@
+{
+  "debug": false,
+  "layers": [
+    "src/Dto",
+    "src/Project",
+    "src/Data",
+    "src/Config",
+    "src/Reporter",
+    "src/FileChecker",
+    "src/Analyzer"
+  ]
+}
