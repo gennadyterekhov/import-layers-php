@@ -21,8 +21,7 @@
         "phpunit/phpunit": "^11"
     },
     "require": {
-        "nikic/php-parser": "^5.3",
-            "ext-yaml": "*"
+        "nikic/php-parser": "^5.3"
     },
     "scripts": {
         "phpunit": "phpunit --no-coverage",
