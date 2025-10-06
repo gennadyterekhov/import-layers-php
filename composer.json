@@ -1,7 +1,7 @@
 {
     "name": "gennadyterekhov/import-layers-php",
     "type": "library",
-    "bin": ["src/index.php"],
+    "bin": ["src/import-layers.php"],
     "autoload": {
         "psr-4": {
             "Gennadyterekhov\\ImportLayersPhp\\": "src/"
