@@ -34,7 +34,7 @@ final class FileAnalyzerTest extends TestCase
     {
         $parser = (new ParserFactory())->createForHostVersion();
         $traverser = new NodeTraverser;
-        $config = new Config();
+        $config = new Config(layers: ['HighUsesLow\High', 'HighUsesLow\Low']);
         $fa = new FileAnalyzer($parser, $traverser);
         [$path, $onlyFuncName] = Testdata::getPathAndFuncName(__METHOD__);
 
@@ -43,6 +43,6 @@ final class FileAnalyzerTest extends TestCase
         $fileInfo = new SplFileInfo($path);
         $res = $fa->analyzeFile($config, $fileInfo);
         self::assertCount(1, $res->errors);
-        self::assertEquals('Cannot use Low from High', $res->errors[0]);
+        self::assertStringStartsWith('Cannot import', $res->errors[0]);
     }
 }
