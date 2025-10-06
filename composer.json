@@ -1,0 +1,26 @@
+{
+    "name": "gennadyterekhov/import-layers-php",
+    "type": "library",
+    "autoload": {
+        "psr-4": {
+            "Gennadyterekhov\\Rephacto\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Gennady Terekhov",
+            "email": "ter.ge@yandex.ru"
+        }
+    ],
+    "require-dev": {
+        "phpunit/phpunit": "^11"
+    },
+    "require": {
+        "nikic/php-parser": "^5.3"
+    }
+}
