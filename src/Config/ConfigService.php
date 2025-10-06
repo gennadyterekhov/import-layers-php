@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace Gennadyterekhov\ImportLayersPhp\Config;
 
-use Composer\Autoload\ClassLoader;
 use Gennadyterekhov\ImportLayersPhp\Dto\Config;
-use ReflectionClass;
+use Gennadyterekhov\ImportLayersPhp\Project\Project;
 
 final readonly class ConfigService
 {
@@ -25,19 +24,11 @@ final readonly class ConfigService
 
     private function getConfigFileContents(): string
     {
-        $path = $this->getProjectRoot() . '/import_layers.json';
+        $path = Project::getProjectRoot() . '/import_layers.json';
         $contents = file_get_contents($path);
         if ($contents === false) {
             return '';
         }
         return $contents;
-    }
-
-    private function getProjectRoot(): string
-    {
-        $reflection = new ReflectionClass(ClassLoader::class);
-        $vendorDir = dirname($reflection->getFileName(), 2);
-
-        return dirname($vendorDir);
     }
 }
