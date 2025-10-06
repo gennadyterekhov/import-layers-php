@@ -46,12 +46,4 @@ final readonly class FileAnalyzer
             $errors[] = $exception->getMessage();
         }
     }
-
-    private function getProjectRoot(): string
-    {
-        $reflection = new ReflectionClass(ClassLoader::class);
-        $vendorDir = dirname($reflection->getFileName(), 2);
-
-        return dirname($vendorDir);
-    }
 }
