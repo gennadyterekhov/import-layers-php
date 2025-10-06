@@ -21,7 +21,6 @@ final readonly class Analyzer
 {
     public function __construct(
         private Parser $parser,
-
         private Config $config,
     ) {}
 
