@@ -4,22 +4,25 @@ declare(strict_types=1);
 
 namespace Gennadyterekhov\ImportLayersPhp\Analyzer;
 
+use Composer\Autoload\ClassLoader;
+use Gennadyterekhov\ImportLayersPhp\Dto\AnalysisResult;
 use Gennadyterekhov\ImportLayersPhp\Dto\Config;
 use PhpParser\NodeTraverser;
 use PhpParser\NodeVisitor\NameResolver;
 use PhpParser\ParserFactory;
 use PhpParser\PrettyPrinter\Standard;
+use ReflectionClass;
+use Throwable;
 
 final readonly class Analyzer
 {
     public function __construct() {}
 
-    public function analyze(Config $config) {}
-
-    public function do(): void
+    public function analyze(Config $config): AnalysisResult
     {
+        $errors = [];
         // TODO config dirs here
-        $inDir = '/some/path';
+        $inDir = $this->getProjectRoot() . '/';
         $outDir = '/some/other/path';
 
         $parser = (new ParserFactory())->createForHostVersion();
@@ -36,27 +39,36 @@ final readonly class Analyzer
 
         foreach ($files as $file) {
             try {
+                var_dump($file->getPathName());
+
                 // read the file that should be converted
                 $code = file_get_contents($file->getPathName());
 
                 // parse
                 $stmts = $parser->parse($code);
 
+                var_dump($stmts);
+
                 // traverse
                 $stmts = $traverser->traverse($stmts);
 
-                // pretty print
-                $code = $prettyPrinter->prettyPrintFile($stmts);
+                var_dump($stmts);
 
-                // write the converted file to the target directory
-                file_put_contents(
-                    substr_replace($file->getPathname(), $outDir, 0, strlen($inDir)),
-                    $code
-                );
-            } catch (\PhpParser\Error $e) {
-                echo 'Parse Error: ', $e->getMessage();
+            } catch (Throwable $exception) {
+                echo 'Parse Error: ', $exception->getMessage();
+                $errors[] = $exception->getMessage();
             }
         }
 
+        $analysis = new AnalysisResult($errors);
+        return $analysis;
+    }
+
+    private function getProjectRoot(): string
+    {
+        $reflection = new ReflectionClass(ClassLoader::class);
+        $vendorDir = dirname($reflection->getFileName(), 2);
+
+        return dirname($vendorDir);
     }
 }
