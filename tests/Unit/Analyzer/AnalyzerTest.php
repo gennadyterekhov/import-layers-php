@@ -9,17 +9,15 @@ use Gennadyterekhov\ImportLayersPhp\Analyzer\FileAnalyzer;
 use Gennadyterekhov\ImportLayersPhp\Dto\Config;
 use PHPUnit\Framework\TestCase;
 use PhpParser\ParserFactory;
-use PhpParser\NodeTraverser;
 
 final class AnalyzerTest extends TestCase
 {
     public function testCanAnalyze(): void
     {
         $parser = (new ParserFactory())->createForHostVersion();
-        $traverser = new NodeTraverser;
         $config = new Config();
         $fa = new FileAnalyzer($parser);
-        $service = new Analyzer($traverser, $fa);
+        $service = new Analyzer($fa);
 
         $res = $service->analyze($config);
         self::assertCount(0, $res->errors);
