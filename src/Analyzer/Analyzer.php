@@ -13,7 +13,10 @@ use PhpParser\Parser;
 use PhpParser\ParserFactory;
 use PhpParser\PrettyPrinter\Standard;
 use PHPUnit\TextUI\Configuration\File;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
 use ReflectionClass;
+use RegexIterator;
 use Throwable;
 
 final readonly class Analyzer
@@ -35,8 +38,8 @@ final readonly class Analyzer
         // $traverser->addVisitor(new NamespaceConverter); // our own node visitor
 
         // iterate over all .php files in the directory
-        $files = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($inDir));
-        $files = new \RegexIterator($files, '/\.php$/');
+        $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($inDir));
+        $files = new RegexIterator($files, '/\.php$/');
 
         foreach ($files as $file) {
             try {
