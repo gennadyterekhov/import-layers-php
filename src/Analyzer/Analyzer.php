@@ -22,7 +22,7 @@ final readonly class Analyzer
     {
         $errors = [];
         // TODO config dirs here
-        $inDir = $this->getProjectRoot() . '/';
+        $inDir = $this->getProjectRoot() . '/src';
         $outDir = '/some/other/path';
 
         $parser = (new ParserFactory())->createForHostVersion();
@@ -47,12 +47,12 @@ final readonly class Analyzer
                 // parse
                 $stmts = $parser->parse($code);
 
-                var_dump($stmts);
+//                var_dump($stmts);
 
                 // traverse
                 $stmts = $traverser->traverse($stmts);
 
-                var_dump($stmts);
+//                var_dump($stmts);
 
             } catch (Throwable $exception) {
                 echo 'Parse Error: ', $exception->getMessage();
