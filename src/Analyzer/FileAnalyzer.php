@@ -23,8 +23,10 @@ final readonly class FileAnalyzer
         private NodeTraverser $traverser,
     ) {}
 
-    public function analyzeFile(Config $config, SplFileInfo $fileInfo): void
+    public function analyzeFile(Config $config, SplFileInfo $fileInfo): AnalysisResult
     {
+        $errors = [];
+
         try {
             var_dump($fileInfo->getPathName());
 
@@ -45,5 +47,7 @@ final readonly class FileAnalyzer
             echo 'Parse Error: ', $exception->getMessage();
             $errors[] = $exception->getMessage();
         }
+        $analysis = new AnalysisResult($errors);
+        return $analysis;
     }
 }
