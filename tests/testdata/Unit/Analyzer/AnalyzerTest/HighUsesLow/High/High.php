@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Tests\testdata\Unit\Analyzer\FileAnalyzerTest\HighUsesLow\High;
+namespace Tests\testdata\Unit\Analyzer\AnalyzerTest\HighUsesLow\High;
 
-use Tests\testdata\Unit\Analyzer\FileAnalyzerTest\HighUsesLow\Low\Low;
+use Tests\testdata\Unit\Analyzer\AnalyzerTest\HighUsesLow\Low\Low;
 
 final readonly class High
 {
