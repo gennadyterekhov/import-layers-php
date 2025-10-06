@@ -38,7 +38,7 @@ final readonly class Analyzer
 
         foreach ($files as $file) {
             try {
-                $this->analyzeFile($this->config, $file);
+                $this->analyzeFile($file);
             } catch (Throwable $exception) {
                 $errors[] = $exception->getMessage();
             }
@@ -47,10 +47,15 @@ final readonly class Analyzer
         return new AnalysisResult($errors);
     }
 
-    public function analyzeFile(Config $config, SplFileInfo $fileInfo): AnalysisResult
+    public function analyzeFile(SplFileInfo $fileInfo): AnalysisResult
     {
         $errors = [];
         try {
+            if ($this->config->debug) {
+                echo 'processing file ' . $fileInfo->getPathName();
+                echo PHP_EOL;
+            }
+
             $code = file_get_contents($fileInfo->getPathName());
 
             $stmts = $this->parser->parse($code);
@@ -62,7 +67,7 @@ final readonly class Analyzer
                 if ($stmt::class === Namespace_::class) {
                     foreach ($stmt->stmts as $item) {
                         if ($item::class === Use_::class) {
-                            $this->analyzeUse($config, $stmt->name->name, $item);
+                            $this->analyzeUse($stmt->name->name, $item);
                         }
                     }
                 }
@@ -77,11 +82,11 @@ final readonly class Analyzer
     /**
      * @throws Exception
      */
-    private function analyzeUse(Config $config, string $namespace, Use_ $useClause): void
+    private function analyzeUse(string $namespace, Use_ $useClause): void
     {
         foreach ($useClause->uses as $useItem) {
-            $currentLayer = $this->getLayer($config, $namespace);
-            $layerThatYoureTryingToImport = $this->getLayer($config, $useItem->name->name);
+            $currentLayer = $this->getLayer($this->config, $namespace);
+            $layerThatYoureTryingToImport = $this->getLayer($this->config, $useItem->name->name);
             if ($currentLayer > $layerThatYoureTryingToImport) {
                 throw new Exception('Cannot import ' . $useItem->name->name . ' from ' . $namespace);
             }
