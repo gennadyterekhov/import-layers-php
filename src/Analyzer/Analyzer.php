@@ -50,6 +50,7 @@ final readonly class Analyzer
     public function analyzeFile(SplFileInfo $fileInfo): AnalysisResult
     {
         $errors = [];
+
         try {
             if ($this->config->debug) {
                 echo 'processing file ' . $fileInfo->getPathName();
@@ -57,8 +58,8 @@ final readonly class Analyzer
             }
 
             $code = file_get_contents($fileInfo->getPathName());
-
             $stmts = $this->parser->parse($code);
+
             if ($stmts === null) {
                 throw new Exception('could not parse file ' . $fileInfo->getPathname());
             }
@@ -85,24 +86,9 @@ final readonly class Analyzer
     private function analyzeUse(string $namespace, Use_ $useClause): void
     {
         foreach ($useClause->uses as $useItem) {
-            $currentLayer = $this->getLayer($this->config, $namespace);
-            $layerThatYoureTryingToImport = $this->getLayer($this->config, $useItem->name->name);
-            if ($currentLayer > $layerThatYoureTryingToImport) {
+            if (!$this->config->isOk($namespace, $useItem->name->name)) {
                 throw new Exception('Cannot import ' . $useItem->name->name . ' from ' . $namespace);
             }
         }
-    }
-
-    private function getLayer(Config $config, string $namespace): int
-    {
-        $total = count($config->layers);
-        for ($i = 0; $i < $total; $i++) {
-            $layerName = $config->layers[$i];
-            if (str_contains($namespace, $layerName)) {
-                return $total - $i;
-            }
-        }
-
-        return 0;
     }
 }
