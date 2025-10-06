@@ -22,5 +22,9 @@
     },
     "require": {
         "nikic/php-parser": "^5.3"
+    },
+    "scripts": {
+        "phpunit": "phpunit --no-coverage",
+        "test": "phpunit --no-coverage --filter"
     }
 }
