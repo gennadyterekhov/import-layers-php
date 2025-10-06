@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Gennadyterekhov\ImportLayersPhp\Analyzer;
 
+use CallbackFilterIterator;
 use Gennadyterekhov\ImportLayersPhp\Dto\AnalysisResult;
 use Gennadyterekhov\ImportLayersPhp\Dto\Config;
 use Gennadyterekhov\ImportLayersPhp\Project\Project;
@@ -27,10 +28,13 @@ final readonly class Analyzer
     public function analyze(): AnalysisResult
     {
         $errors = [];
-        $inDir = Project::getProjectRoot() . '/src';
+        $inDir = Project::getProjectRoot();
 
         $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($inDir));
         $files = new RegexIterator($files, '/\.php$/');
+        $files = new CallbackFilterIterator($files, function ($current) {
+            return !str_contains($current->getPathname(), DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR);
+        });
 
         foreach ($files as $file) {
             try {
