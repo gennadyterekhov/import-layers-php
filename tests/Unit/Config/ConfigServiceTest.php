@@ -9,7 +9,7 @@ use PHPUnit\Framework\TestCase;
 
 final class ConfigServiceTest extends TestCase
 {
-    public function testCanDropFuncBodies(): void
+    public function testCanReadConfigFromFileIntoDto(): void
     {
         $service = new ConfigService();
         $config = $service->readConfigFromFileIntoDto();
