@@ -9,14 +9,19 @@ use Gennadyterekhov\ImportLayersPhp\Dto\AnalysisResult;
 use Gennadyterekhov\ImportLayersPhp\Dto\Config;
 use PhpParser\NodeTraverser;
 use PhpParser\NodeVisitor\NameResolver;
+use PhpParser\Parser;
 use PhpParser\ParserFactory;
 use PhpParser\PrettyPrinter\Standard;
+use PHPUnit\TextUI\Configuration\File;
 use ReflectionClass;
 use Throwable;
 
 final readonly class Analyzer
 {
-    public function __construct() {}
+    public function __construct(
+        private NodeTraverser $traverser,
+        private FileAnalyzer $fileAnalyzer,
+    ) {}
 
     public function analyze(Config $config): AnalysisResult
     {
@@ -25,12 +30,8 @@ final readonly class Analyzer
         $inDir = $this->getProjectRoot() . '/src';
         $outDir = '/some/other/path';
 
-        $parser = (new ParserFactory())->createForHostVersion();
-        $traverser = new NodeTraverser;
-        $prettyPrinter = new Standard;
-
         // TODO config visitors here
-        $traverser->addVisitor(new NameResolver); // we will need resolved names
+        $this->traverser->addVisitor(new NameResolver); // we will need resolved names
         // $traverser->addVisitor(new NamespaceConverter); // our own node visitor
 
         // iterate over all .php files in the directory
@@ -39,21 +40,7 @@ final readonly class Analyzer
 
         foreach ($files as $file) {
             try {
-                var_dump($file->getPathName());
-
-                // read the file that should be converted
-                $code = file_get_contents($file->getPathName());
-
-                // parse
-                $stmts = $parser->parse($code);
-
-//                var_dump($stmts);
-
-                // traverse
-                $stmts = $traverser->traverse($stmts);
-
-//                var_dump($stmts);
-
+                $this->fileAnalyzer->analyzeFile($config, $file);
             } catch (Throwable $exception) {
                 echo 'Parse Error: ', $exception->getMessage();
                 $errors[] = $exception->getMessage();
