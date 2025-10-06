@@ -8,6 +8,7 @@ use Gennadyterekhov\ImportLayersPhp\Dto\Config;
 use PhpParser\NodeTraverser;
 use PhpParser\NodeVisitor\NameResolver;
 use PhpParser\ParserFactory;
+use PhpParser\PrettyPrinter\Standard;
 
 final readonly class Analyzer
 {
@@ -23,13 +24,13 @@ final readonly class Analyzer
 
         $parser = (new ParserFactory())->createForHostVersion();
         $traverser = new NodeTraverser;
-        $prettyPrinter = new PrettyPrinter\Standard;
+        $prettyPrinter = new Standard;
 
-// TODO config visitors here
+        // TODO config visitors here
         $traverser->addVisitor(new NameResolver); // we will need resolved names
-// $traverser->addVisitor(new NamespaceConverter); // our own node visitor
+        // $traverser->addVisitor(new NamespaceConverter); // our own node visitor
 
-// iterate over all .php files in the directory
+        // iterate over all .php files in the directory
         $files = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($inDir));
         $files = new \RegexIterator($files, '/\.php$/');
 
@@ -52,11 +53,10 @@ final readonly class Analyzer
                     substr_replace($file->getPathname(), $outDir, 0, strlen($inDir)),
                     $code
                 );
-            } catch (PhpParser\Error $e) {
+            } catch (\PhpParser\Error $e) {
                 echo 'Parse Error: ', $e->getMessage();
             }
         }
 
     }
-
 }
