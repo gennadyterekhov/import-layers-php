@@ -18,7 +18,7 @@ final class AnalyzerTest extends TestCase
         $parser = (new ParserFactory())->createForHostVersion();
         $traverser = new NodeTraverser;
         $config = new Config();
-        $fa = new FileAnalyzer($parser, $traverser);
+        $fa = new FileAnalyzer($parser);
         $service = new Analyzer($traverser, $fa);
 
         $res = $service->analyze($config);
