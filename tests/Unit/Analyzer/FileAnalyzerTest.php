@@ -18,9 +18,8 @@ final class FileAnalyzerTest extends TestCase
     public function testCanAnalyzeFile(): void
     {
         $parser = (new ParserFactory())->createForHostVersion();
-        $traverser = new NodeTraverser;
         $config = new Config();
-        $fa = new FileAnalyzer($parser, $traverser);
+        $fa = new FileAnalyzer($parser);
         [$path, $onlyFuncName] = Testdata::getPathAndFuncName(__METHOD__);
 
         var_dump($path);
@@ -33,9 +32,8 @@ final class FileAnalyzerTest extends TestCase
     public function testHighCannotUseLow(): void
     {
         $parser = (new ParserFactory())->createForHostVersion();
-        $traverser = new NodeTraverser;
         $config = new Config(layers: ['HighUsesLow\High', 'HighUsesLow\Low']);
-        $fa = new FileAnalyzer($parser, $traverser);
+        $fa = new FileAnalyzer($parser);
         [$path, $onlyFuncName] = Testdata::getPathAndFuncName(__METHOD__);
 
         var_dump($path);
