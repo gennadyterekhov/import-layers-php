@@ -5,7 +5,7 @@ import-layers-php is  a library to check if imports are correctly layered
 
 in other words - check that higher layer packages do not depend on lower layer packages (dependency rule from clean architecture)
 
-[see also](https://github.com/gennadyterekhov/import-layers-go)
+[see also version for golang projects](https://github.com/gennadyterekhov/import-layers-go)
 
 ## example
 
