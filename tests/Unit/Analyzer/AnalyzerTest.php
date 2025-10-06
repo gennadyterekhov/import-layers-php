@@ -13,7 +13,7 @@ use Tests\Helpers\Testdata;
 
 final class AnalyzerTest extends TestCase
 {
-    public function testCanAnalyze(): void
+    public function testCanAnalyzeAll(): void
     {
         $parser = (new ParserFactory())->createForHostVersion();
         $config = new Config();
@@ -33,7 +33,7 @@ final class AnalyzerTest extends TestCase
 
         $path = $path . 'LowUsesHigh/Low/Low.php';
         $fileInfo = new SplFileInfo($path);
-        $res = $service->analyzeFile($config, $fileInfo);
+        $res = $service->analyzeFile($fileInfo);
         self::assertCount(0, $res->errors);
     }
 
@@ -47,7 +47,7 @@ final class AnalyzerTest extends TestCase
 
         $path = $path . 'HighUsesLow/High/High.php';
         $fileInfo = new SplFileInfo($path);
-        $res = $service->analyzeFile($config, $fileInfo);
+        $res = $service->analyzeFile($fileInfo);
         self::assertCount(1, $res->errors);
         self::assertStringStartsWith('Cannot import', $res->errors[0]);
     }
