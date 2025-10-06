@@ -26,7 +26,7 @@ final class AnalyzerTest extends TestCase
     public function testCanAnalyzeFile(): void
     {
         $parser = (new ParserFactory())->createForHostVersion();
-        $config = new Config();
+        $config = new Config(layers: ['HighUsesLow\High', 'HighUsesLow\Low']);
         $service = new Analyzer($parser, $config);
 
         [$path, $onlyFuncName] = Testdata::getPathAndFuncName(__METHOD__);
@@ -34,6 +34,7 @@ final class AnalyzerTest extends TestCase
         $path = $path . 'LowUsesHigh/Low/Low.php';
         $fileInfo = new SplFileInfo($path);
         $res = $service->analyzeFile($fileInfo);
+        var_dump($res);
         self::assertCount(0, $res->errors);
     }
 
