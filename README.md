@@ -27,7 +27,8 @@ php
     
     namespace Tests\testdata\Unit\Analyzer\AnalyzerTest\HighUsesLow\High;
     
-    use Tests\testdata\Unit\Analyzer\AnalyzerTest\HighUsesLow\Low\Low; // returns error: `cannot import package from lower layer`
+    // returns error: `cannot import package from lower layer`
+    use Tests\testdata\Unit\Analyzer\AnalyzerTest\HighUsesLow\Low\Low; 
     
     final readonly class High
     {
