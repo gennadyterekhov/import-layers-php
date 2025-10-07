@@ -8,6 +8,16 @@ use PhpParser\ParserFactory;
 
 $service = new ConfigService();
 $config = $service->readConfigFromFileIntoDto();
+
 $parser = (new ParserFactory())->createForHostVersion();
 $analyzer = new Analyzer($parser, $config);
-$analyzer->analyze();
+$result = $analyzer->analyze();
+
+if (count($result->errors) > 0) {
+    foreach ($result->errors as $error) {
+        echo $error . PHP_EOL;
+    }
+} else {
+    echo 'OK' . PHP_EOL;
+}
+echo PHP_EOL;
