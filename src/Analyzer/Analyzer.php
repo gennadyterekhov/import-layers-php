@@ -38,7 +38,8 @@ final readonly class Analyzer
 
         foreach ($files as $file) {
             try {
-                $this->analyzeFile($file);
+                $fileAnalysis = $this->analyzeFile($file);
+                $errors = [...$errors, ...$fileAnalysis->errors];
             } catch (Throwable $exception) {
                 $errors[] = $exception->getMessage();
             }
