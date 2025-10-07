@@ -12,20 +12,30 @@ final readonly class Config
         public array $layers = [],
     ) {}
 
-    public function getLayer(string $namespace): int
+    public function getLayer(string $namespace, bool $isDestination = true): int
     {
         foreach ($this->layers as $index => $layer) {
             if (str_contains($namespace, $layer)) {
                 return $index;
             }
         }
-        return 0;
+        if ($isDestination) {
+            return -1;
+        }
+        return 1000;
     }
 
     public function isOk(string $namespace, string $layer): bool
     {
-        $currentLayer = $this->getLayer($namespace);
+        $currentLayer = $this->getLayer($namespace, false);
         $layerThatYoureTryingToImport = $this->getLayer($layer);
+
+        if ($layerThatYoureTryingToImport === -1) {
+            if ($this->debug) {
+                echo 'layer ' . $layer . ' is not present in config. skipping' . PHP_EOL . PHP_EOL;
+            }
+            return true;
+        }
 
         if ($this->debug) {
             echo 'comparing ' . $namespace . ' and ' . $layer . PHP_EOL;
@@ -37,6 +47,7 @@ final readonly class Config
             echo $currentLayer . ' >= ' . $layerThatYoureTryingToImport . ' ====> ' . $boolStr . PHP_EOL;
             echo PHP_EOL;
         }
+
         return $currentLayer >= $layerThatYoureTryingToImport;
     }
 }
