@@ -1,12 +1,12 @@
 {
-  "debug": false,
+  "debug": true,
   "layers": [
-    "src/Dto",
-    "src/Project",
-    "src/Data",
-    "src/Config",
-    "src/Reporter",
-    "src/FileChecker",
-    "src/Analyzer"
+    "ImportLayersPhp\\Dto",
+    "ImportLayersPhp\\Project",
+    "ImportLayersPhp\\Config",
+    "ImportLayersPhp\\Data",
+    "ImportLayersPhp\\Reporter",
+    "ImportLayersPhp\\FileChecker",
+    "ImportLayersPhp\\Analyzer"
   ]
 }
