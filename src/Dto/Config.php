@@ -27,6 +27,16 @@ final readonly class Config
         $currentLayer = $this->getLayer($namespace);
         $layerThatYoureTryingToImport = $this->getLayer($layer);
 
+        if ($this->debug) {
+            echo 'comparing ' . $namespace . ' and ' . $layer . PHP_EOL;
+            echo ' less the number - higher the layer ' . PHP_EOL;
+            echo $namespace . ' has layer number ' . $currentLayer . PHP_EOL;
+            echo $layer . ' has layer number ' . $layerThatYoureTryingToImport . PHP_EOL;
+
+            $boolStr = ($currentLayer >= $layerThatYoureTryingToImport) ? 'true' : 'false';
+            echo $currentLayer . ' >= ' . $layerThatYoureTryingToImport . ' ====> ' . $boolStr . PHP_EOL;
+            echo PHP_EOL;
+        }
         return $currentLayer >= $layerThatYoureTryingToImport;
     }
 }
