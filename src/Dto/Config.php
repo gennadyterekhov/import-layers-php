@@ -9,6 +9,7 @@ final readonly class Config
     public function __construct(
         public bool $debug = false,
         public bool $ignoreTests = false,
+        public string $dirToCheck = '',
         public array $layers = [],
     ) {}
 

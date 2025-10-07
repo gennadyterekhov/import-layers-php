@@ -1,5 +1,6 @@
 {
   "debug": false,
+  "rootDir": "src",
   "layers": [
     "ImportLayersPhp\\Dto",
     "ImportLayersPhp\\Project",

@@ -18,8 +18,12 @@ use Gennadyterekhov\ImportLayersPhp\Analyzer\Analyzer;
 use Gennadyterekhov\ImportLayersPhp\Config\ConfigService;
 use PhpParser\ParserFactory;
 
+$dirToCheck = '';
+if ($argc > 1) {
+    $dirToCheck = $argv[1];
+}
 $service = new ConfigService();
-$config = $service->readConfigFromFileIntoDto();
+$config = $service->readConfigFromFileIntoDto($dirToCheck);
 
 $parser = (new ParserFactory())->createForHostVersion();
 $analyzer = new Analyzer($parser, $config);

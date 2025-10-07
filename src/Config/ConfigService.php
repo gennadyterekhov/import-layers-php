@@ -11,13 +11,14 @@ final readonly class ConfigService
 {
     public function __construct() {}
 
-    public function readConfigFromFileIntoDto(): Config
+    public function readConfigFromFileIntoDto(string $dirToCheck = ''): Config
     {
         $data = json_decode($this->getConfigFileContents(), true);
 
         return new Config(
             $data['debug'] ?? false,
             $data['ignoreTests'] ?? false,
+            $data['rootDir'] ?? $dirToCheck,
             $data['layers'] ?? [],
         );
     }

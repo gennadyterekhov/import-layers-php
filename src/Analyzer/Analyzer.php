@@ -29,6 +29,9 @@ final readonly class Analyzer
     {
         $errors = [];
         $inDir = Project::getProjectRoot();
+        if ($this->config->dirToCheck) {
+            $inDir .= '/' . $this->config->dirToCheck;
+        }
 
         $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($inDir));
         $files = new RegexIterator($files, '/\.php$/');
