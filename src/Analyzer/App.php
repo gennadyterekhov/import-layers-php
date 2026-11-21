@@ -7,6 +7,7 @@ namespace Gennadyterekhov\ImportLayersPhp\Analyzer;
 use Gennadyterekhov\ImportLayersPhp\Config\ConfigService;
 use Gennadyterekhov\ImportLayersPhp\Dto\AnalysisResult;
 use Gennadyterekhov\ImportLayersPhp\Dto\Config;
+use InvalidArgumentException;
 use PhpParser\ParserFactory;
 use SplFileInfo;
 
@@ -20,8 +21,21 @@ final readonly class App
 
     public static function createApp($argc = 0, $argv = ''): App
     {
-        $dirToCheck = ($argc > 1) ? $argv[1] : '';
-        $config = (new ConfigService())->readConfigFromFileIntoDto($dirToCheck);
+        $dirToCheck = null;
+        $configPath = null;
+        for ($index = 1; $index < $argc; $index++) {
+            $argument = $argv[$index];
+            if ($argument === '-c') {
+                $configPath = $argv[++$index] ?? '';
+                if ($configPath === '') {
+                    throw new InvalidArgumentException('The -c option requires a path to a config file.');
+                }
+            } elseif ($dirToCheck === null) {
+                $dirToCheck = $argument;
+            }
+        }
+
+        $config = (new ConfigService())->readConfigFromFileIntoDto($dirToCheck ?? '', $configPath);
 
         return App::createAppWithConfig($config);
     }

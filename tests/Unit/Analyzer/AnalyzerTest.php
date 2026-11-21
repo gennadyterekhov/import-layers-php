@@ -22,6 +22,33 @@ final class AnalyzerTest extends TestCase
         self::assertCount(0, $res->errors);
     }
 
+    public function testCanUseCustomConfigWithPositionalDirectory(): void
+    {
+        $path = tempnam(sys_get_temp_dir(), 'import-layers-');
+        self::assertNotFalse($path);
+
+        try {
+            file_put_contents($path, <<<'JSON'
+                {
+                    "layers": [
+                        "HighUsesLow\\High", "HighUsesLow\\Low"
+                    ]
+                }
+                JSON);
+            $directory = 'tests/testdata/Unit/Analyzer/AnalyzerTest/HighUsesLow';
+
+            foreach ([['-c', $path, $directory], [$directory, '-c', $path]] as $arguments) {
+                $app = App::createApp(4, ['import-layers.php', ...$arguments]);
+                $result = $app->analyze();
+
+                self::assertCount(1, $result->errors);
+                self::assertStringContainsString('HighUsesLow\\Low\\Low from', $result->errors[0]);
+            }
+        } finally {
+            unlink($path);
+        }
+    }
+
     public function testCanAnalyzeFile(): void
     {
         $app = App::createAppWithConfig(new Config(layers: ['HighUsesLow\High', 'HighUsesLow\Low']));

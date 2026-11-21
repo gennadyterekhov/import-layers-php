@@ -50,7 +50,14 @@ run
 
 ## config
 
-See example config in [import_layers.json](https://github.com/gennadyterekhov/import-layers-php/blob/main/import_layers.json)  
-Config file must be in the same directory as a `composer.json` file.  
-It must be named `import_layers.json`.  
-Config file name and location are not configurable.
+By default, the tool reads [import_layers.json](https://github.com/gennadyterekhov/import-layers-php/blob/main/import_layers.json) from the project root.
+Use `-c` to select a different JSON file.
+
+~~~sh
+./analyzers/import-layers-php -c config/layers.json
+./analyzers/import-layers-php -c config/layers.json src
+~~~
+
+The config path can be absolute or relative to the current working directory.
+The positional directory is used when the config omits **rootDir**.
+
