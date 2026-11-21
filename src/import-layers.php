@@ -16,5 +16,11 @@ else if (file_exists(__DIR__ . '/../../autoload.php')) {
     exit(1);
 }
 
-$app = App::createApp($argc, $argv);
+try {
+    $app = App::createApp($argc, $argv);
+} catch (InvalidArgumentException | RuntimeException $exception) {
+    fwrite(STDERR, $exception->getMessage() . PHP_EOL);
+    exit(1);
+}
+
 $app->outputResult($app->analyze());
