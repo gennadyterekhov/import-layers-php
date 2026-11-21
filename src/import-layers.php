@@ -1,6 +1,8 @@
 <?php declare(strict_types=1);
 
 // Try Composer's global path first
+use Gennadyterekhov\ImportLayersPhp\Analyzer\App;
+
 if (isset($GLOBALS['_composer_autoload_path'])) {
     require_once $GLOBALS['_composer_autoload_path'];
 } // Fallback to relative path (for development)
@@ -14,26 +16,5 @@ else if (file_exists(__DIR__ . '/../../autoload.php')) {
     exit(1);
 }
 
-use Gennadyterekhov\ImportLayersPhp\Analyzer\Analyzer;
-use Gennadyterekhov\ImportLayersPhp\Config\ConfigService;
-use PhpParser\ParserFactory;
-
-$dirToCheck = '';
-if ($argc > 1) {
-    $dirToCheck = $argv[1];
-}
-$service = new ConfigService();
-$config = $service->readConfigFromFileIntoDto($dirToCheck);
-
-$parser = (new ParserFactory())->createForHostVersion();
-$analyzer = new Analyzer($parser, $config);
-$result = $analyzer->analyze();
-
-if (count($result->errors) > 0) {
-    foreach ($result->errors as $error) {
-        echo $error . PHP_EOL;
-    }
-} else {
-    echo 'OK' . PHP_EOL;
-}
-echo PHP_EOL;
+$app = App::createApp($argc, $argv);
+$app->outputResult($app->analyze());

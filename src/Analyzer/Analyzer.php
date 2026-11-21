@@ -23,6 +23,7 @@ final readonly class Analyzer
     public function __construct(
         private Parser $parser,
         private Config $config,
+        private UseStmtChecker $useStmtChecker,
     ) {}
 
     public function analyze(): AnalysisResult
@@ -90,7 +91,9 @@ final readonly class Analyzer
     private function analyzeUse(string $namespace, Use_ $useClause): void
     {
         foreach ($useClause->uses as $useItem) {
-            if (!$this->config->isOk($namespace, $useItem->name->name)) {
+            $isOk = $this->useStmtChecker->isOk($this->config, $namespace, $useItem->name->name, $this->config->debug);
+
+            if (!$isOk) {
                 throw new Exception('Cannot import ' . $useItem->name->name . ' from ' . $namespace);
             }
         }

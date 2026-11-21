@@ -15,6 +15,6 @@ final class ConfigServiceTest extends TestCase
         $config = $service->readConfigFromFileIntoDto();
         self::assertEquals(false, $config->debug);
         self::assertEquals(false, $config->ignoreTests);
-        self::assertEquals('src/Dto', $config->layers[0]);
+        self::assertEquals('ImportLayersPhp\Dto', $config->layers[0]);
     }
 }
