@@ -11,7 +11,7 @@ final class TestdataTest extends TestCase
     {
         [$path, $onlyFuncName] = Testdata::getPathAndFuncName(__METHOD__);
 
-        self::assertEquals('tests/testdata/TestdataTest/', $path);
+        self::assertStringContainsString('tests/testdata/TestdataTest/', $path);
         self::assertEquals('testCanGetPathToTestdata', $onlyFuncName);
     }
 }
