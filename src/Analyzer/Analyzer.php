@@ -4,98 +4,160 @@ declare(strict_types=1);
 
 namespace Gennadyterekhov\ImportLayersPhp\Analyzer;
 
-use CallbackFilterIterator;
 use Gennadyterekhov\ImportLayersPhp\Dto\AnalysisResult;
 use Gennadyterekhov\ImportLayersPhp\Dto\Config;
 use Gennadyterekhov\ImportLayersPhp\Project\Project;
-use PhpParser\Node\Stmt\Namespace_;
-use PhpParser\Node\Stmt\Use_;
+use Gennadyterekhov\ImportLayersPhp\Syntax\NamespaceBlock;
+use Gennadyterekhov\ImportLayersPhp\Syntax\SourceParser;
+use Gennadyterekhov\ImportLayersPhp\Syntax\SymbolIndex;
+use PhpParser\Error;
 use PhpParser\Parser;
-use RecursiveDirectoryIterator;
-use RecursiveIteratorIterator;
-use RegexIterator;
+use RuntimeException;
 use SplFileInfo;
-use Throwable;
-use Exception;
 
 final readonly class Analyzer
 {
+    private Project $project;
+    private SourceParser $sourceParser;
+
     public function __construct(
-        private Parser $parser,
+        Parser $parser,
         private Config $config,
         private UseStmtChecker $useStmtChecker,
-    ) {}
+        private Debug $debug = new Debug(),
+    ) {
+        $this->project = new Project($config->projectRoot ?? Project::getProjectRoot());
+        $this->sourceParser = new SourceParser($parser);
+    }
 
-    public function analyze(): AnalysisResult
+    public function analyze(bool $graph = false): AnalysisResult
     {
-        $errors = [];
-        $inDir = Project::getProjectRoot();
-        if ($this->config->dirToCheck) {
-            $inDir .= '/' . $this->config->dirToCheck;
-        }
-
-        $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($inDir));
-        $files = new RegexIterator($files, '/\.php$/');
-        $files = new CallbackFilterIterator($files, function ($current) {
-            return !str_contains($current->getPathname(), DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR);
-        });
-
-        foreach ($files as $file) {
-            try {
-                $fileAnalysis = $this->analyzeFile($file);
-                $errors = [...$errors, ...$fileAnalysis->errors];
-            } catch (Throwable $exception) {
-                $errors[] = $exception->getMessage();
+        $selection = $this->config->paths ?: [$this->project->root];
+        if ($this->config->dirToCheck !== '') {
+            $directory = Project::absolutePath($this->config->dirToCheck, $this->project->root);
+            if (!is_dir($directory)) {
+                throw new RuntimeException("Invalid project directory: $directory");
             }
+            $selection = [$directory];
         }
-
-        return new AnalysisResult($errors);
+        $selected = $this->project->files($selection, $this->config->ignoreTests);
+        $files = $selection === [$this->project->root]
+            ? $selected
+            : $this->project->files([$this->project->root], $this->config->ignoreTests);
+        return $this->analyzeFiles($selected, $files, $graph);
     }
 
     public function analyzeFile(SplFileInfo $fileInfo): AnalysisResult
     {
-        $errors = [];
-
-        try {
-            if ($this->config->debug) {
-                echo 'processing file ' . $fileInfo->getPathName();
-                echo PHP_EOL;
-            }
-
-            $code = file_get_contents($fileInfo->getPathName());
-            $stmts = $this->parser->parse($code);
-
-            if ($stmts === null) {
-                throw new Exception('could not parse file ' . $fileInfo->getPathname());
-            }
-
-            foreach ($stmts as $stmt) {
-                if ($stmt::class === Namespace_::class) {
-                    foreach ($stmt->stmts as $item) {
-                        if ($item::class === Use_::class) {
-                            $this->analyzeUse($stmt->name->name, $item);
-                        }
-                    }
-                }
-            }
-        } catch (Throwable $exception) {
-            $errors[] = $exception->getMessage();
+        $path = $fileInfo->getRealPath();
+        if ($path === false || !is_file($path)) {
+            return new AnalysisResult(problems: ['Invalid file: ' . $fileInfo->getPathname()]);
         }
-
-        return new AnalysisResult($errors);
+        $files = $this->project->files([$this->project->root], $this->config->ignoreTests);
+        return $this->analyzeFiles([$this->project->relativePath($path) => $path], $files, false);
     }
 
     /**
-     * @throws Exception
+     * @param array<string, string> $selected
+     * @param array<string, string> $files
      */
-    private function analyzeUse(string $namespace, Use_ $useClause): void
+    private function analyzeFiles(array $selected, array $files, bool $graph): AnalysisResult
     {
-        foreach ($useClause->uses as $useItem) {
-            $isOk = $this->useStmtChecker->isOk($this->config, $namespace, $useItem->name->name, $this->config->debug);
+        $files += $selected;
+        $symbols = new SymbolIndex();
 
-            if (!$isOk) {
-                throw new Exception('Cannot import ' . $useItem->name->name . ' from ' . $namespace);
+        [$parsed, $problems] = $this->indexSources($files, $selected, $symbols, $graph);
+        $includes = new IncludeResolver($this->project->root, array_flip($files));
+        $extractor = new ImportExtractor($symbols, $includes);
+
+        $violations = [];
+        $dependencies = [];
+        foreach ($parsed as $path => $blocks) {
+            foreach ($blocks as $block) {
+                $sourceLayer = $this->useStmtChecker->getLayerNumber($this->config, $block->name, $path);
+                foreach ($extractor->extract($block, $files[$path]) as $import) {
+                    if ($graph && $import->targetPath !== null) {
+                        $dependencies[$path][$import->targetPath] = true;
+                    }
+                    $targetLayer = $this->useStmtChecker->getLayerNumber(
+                        $this->config,
+                        $import->targetNames,
+                        $import->targetPath,
+                    );
+                    if (!$this->useStmtChecker->allowsDependency($sourceLayer, $targetLayer)) {
+                        $from = $this->config->layers[$sourceLayer];
+                        $to = $this->config->layers[$targetLayer];
+                        $violations[] = "$path:$import->line -> $import->name: cannot import package from lower layer ($from -> $to)";
+                    }
+                }
             }
         }
+
+        return new AnalysisResult($violations, $problems, $this->buildGraph($graph ? array_keys($selected) : [], $dependencies));
+    }
+
+    /**
+     * @param array<string, string> $files
+     * @param array<string, string> $selected
+     * @return array{array<string, list<NamespaceBlock>>, list<string>}
+     */
+    private function indexSources(array $files, array $selected, SymbolIndex $symbols, bool $graph): array
+    {
+        $parsed = [];
+        $problems = [];
+        foreach ($files as $relative => $path) {
+            $checking = isset($selected[$relative]);
+            if ($checking && $this->config->debug) {
+                $this->debug->processingFile($relative, $graph);
+            }
+
+            $code = @file_get_contents($path);
+            if ($code === false) {
+                if ($checking) {
+                    $problems[] = "$relative: could not read source file";
+                }
+                continue;
+            }
+
+            try {
+                $blocks = $this->sourceParser->parse($code);
+            } catch (Error $error) {
+                if ($checking) {
+                    $problems[] = sprintf('%s:%d: %s', $relative, $error->getStartLine(), $error->getRawMessage());
+                }
+                continue;
+            } catch (RuntimeException $error) {
+                if ($checking) {
+                    $problems[] = "$relative: " . $error->getMessage();
+                }
+                continue;
+            }
+            $symbols->addFile($relative, $blocks);
+            if ($checking) {
+                $parsed[$relative] = $blocks;
+            }
+        }
+        return [$parsed, $problems];
+    }
+
+    /**
+     * @param list<string> $selected
+     * @param array<string, array<string, true>> $dependencies
+     * @return array{nodes: list<string>, edges: list<array{from: string, to: string}>}
+     */
+    private function buildGraph(array $selected, array $dependencies): array
+    {
+        $nodes = array_fill_keys($selected, true);
+        $edges = [];
+        ksort($dependencies, SORT_STRING);
+        foreach ($dependencies as $from => $targets) {
+            ksort($targets, SORT_STRING);
+            foreach (array_keys($targets) as $to) {
+                $nodes[$to] = true;
+                $edges[] = ['from' => $from, 'to' => $to];
+            }
+        }
+        ksort($nodes, SORT_STRING);
+        return ['nodes' => array_keys($nodes), 'edges' => $edges];
     }
 }

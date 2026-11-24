@@ -42,7 +42,7 @@ final class AnalyzerTest extends TestCase
                 $result = $app->analyze();
 
                 self::assertCount(1, $result->errors);
-                self::assertStringContainsString('HighUsesLow\\Low\\Low from', $result->errors[0]);
+                self::assertStringContainsString('HighUsesLow\\Low\\Low: cannot import package from lower layer', $result->errors[0]);
             }
         } finally {
             unlink($path);
@@ -72,6 +72,6 @@ final class AnalyzerTest extends TestCase
         $fileInfo = new SplFileInfo($path);
         $res = $app->analyzeFile($fileInfo);
         self::assertCount(1, $res->errors);
-        self::assertStringStartsWith('Cannot import', $res->errors[0]);
+        self::assertStringContainsString('cannot import package from lower layer', $res->errors[0]);
     }
 }

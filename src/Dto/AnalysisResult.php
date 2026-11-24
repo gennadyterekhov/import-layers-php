@@ -6,7 +6,15 @@ namespace Gennadyterekhov\ImportLayersPhp\Dto;
 
 final readonly class AnalysisResult
 {
+    public array $errors;
+    public array $violations;
+
     public function __construct(
-        public array $errors = [],
-    ) {}
+        array $errors = [],
+        public array $problems = [],
+        public array $graph = ['nodes' => [], 'edges' => []],
+    ) {
+        $this->errors = [...$problems, ...$errors];
+        $this->violations = $errors;
+    }
 }
