@@ -25,7 +25,7 @@ foreach (array_slice($argv, 1) as $argument) {
 
 try {
     $app = App::createApp($argc, $argv);
-    exit($app->outputResult($app->analyzeForCli()));
+    exit($app->outputResult($app->analyze()));
 } catch (InvalidArgumentException | RuntimeException | JsonException $exception) {
     fwrite(STDERR, $exception->getMessage() . "\n");
     exit(2);

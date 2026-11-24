@@ -30,7 +30,7 @@ final readonly class Analyzer
         $this->sourceParser = new SourceParser($parser);
     }
 
-    public function analyze(bool $graph = false, bool $deferPolicy = false): AnalysisResult
+    public function analyze(bool $graph = false): AnalysisResult
     {
         $selection = $this->config->paths ?: [$this->project->root];
         if ($this->config->dirToCheck !== '') {
@@ -44,7 +44,7 @@ final readonly class Analyzer
         $files = $selection === [$this->project->root]
             ? $selected
             : $this->project->files([$this->project->root], $this->config->ignoreTests);
-        return $this->analyzeFiles($selected, $files, $graph, $deferPolicy);
+        return $this->analyzeFiles($selected, $files, $graph);
     }
 
     public function analyzeFile(SplFileInfo $fileInfo): AnalysisResult
@@ -61,7 +61,7 @@ final readonly class Analyzer
      * @param array<string, string> $selected
      * @param array<string, string> $files
      */
-    private function analyzeFiles(array $selected, array $files, bool $graph, bool $deferPolicy = false): AnalysisResult
+    private function analyzeFiles(array $selected, array $files, bool $graph): AnalysisResult
     {
         $files += $selected;
         $symbols = new SymbolIndex();
@@ -70,56 +70,47 @@ final readonly class Analyzer
         $includes = new IncludeResolver($this->project->root, array_flip($files));
         $extractor = new ImportExtractor($symbols, $includes);
 
-        $violations = [];
         $references = [];
-        $collectGraph = $graph && !$deferPolicy;
-        $dependencies = [];
         foreach ($parsed as $path => $blocks) {
             foreach ($blocks as $block) {
                 $sourceLayer = $this->useStmtChecker->getLayerNumber($this->config, $block->name, $path);
                 foreach ($extractor->extract($block, $files[$path]) as $import) {
-                    if ($collectGraph && $import->targetPath !== null) {
-                        $dependencies[$path][$import->targetPath] = true;
-                    }
                     $targetLayer = $this->useStmtChecker->getLayerNumber(
                         $this->config,
                         $import->targetNames,
                         $import->targetPath,
                     );
-                    if ($deferPolicy) {
-                        $references[] = [
-                            'from' => $path,
-                            'to' => $import->targetPath ?? '',
-                            'specifier' => $import->name,
-                            'line' => $import->line,
-                            'fromLayer' => $sourceLayer === null ? '' : $this->config->layers[$sourceLayer],
-                            'toLayer' => $targetLayer === null ? '' : $this->config->layers[$targetLayer],
-                            'resolvedLayers' => true,
-                        ];
-                        continue;
-                    }
-                    if (!$this->useStmtChecker->allowsDependency($sourceLayer, $targetLayer)) {
-                        $from = $this->config->layers[$sourceLayer];
-                        $to = $this->config->layers[$targetLayer];
-                        $violations[] = "$path:$import->line -> $import->name: cannot import package from lower layer ($from -> $to)";
-                    }
+                    $references[] = [
+                        'from' => $path,
+                        'to' => $import->targetPath ?? '',
+                        'specifier' => $import->name,
+                        'line' => $import->line,
+                        'fromLayer' => $sourceLayer === null ? '' : $this->config->layers[$sourceLayer],
+                        'toLayer' => $targetLayer === null ? '' : $this->config->layers[$targetLayer],
+                        'resolvedLayers' => true,
+                    ];
                 }
             }
         }
 
-        return new AnalysisResult(
-            $violations,
-            $problems,
-            $this->buildGraph($graph || $deferPolicy ? array_keys($selected) : [], $dependencies),
-            $deferPolicy ? [
-                'language' => 'php',
-                'interpreter' => PHP_BINARY,
-                'root' => $this->project->root,
-                'layers' => $this->config->layers,
-                'files' => array_keys($parsed),
-                'references' => $references,
-            ] : [],
-        );
+        $checked = Pipeline::check([
+            'language' => 'php',
+            'interpreter' => PHP_BINARY,
+            'root' => $this->project->root,
+            'layers' => $this->config->layers,
+            'files' => array_keys($parsed),
+            'references' => $references,
+        ]);
+        if (!$graph) {
+            return new AnalysisResult($checked['violations'], $problems);
+        }
+
+        $nodes = array_unique([...array_keys($selected), ...array_column($checked['edges'], 'to')]);
+        sort($nodes, SORT_STRING);
+        return new AnalysisResult($checked['violations'], $problems, [
+            'nodes' => $nodes,
+            'edges' => $checked['edges'],
+        ]);
     }
 
     /**
@@ -166,24 +157,4 @@ final readonly class Analyzer
         return [$parsed, $problems];
     }
 
-    /**
-     * @param list<string> $selected
-     * @param array<string, array<string, true>> $dependencies
-     * @return array{nodes: list<string>, edges: list<array{from: string, to: string}>}
-     */
-    private function buildGraph(array $selected, array $dependencies): array
-    {
-        $nodes = array_fill_keys($selected, true);
-        $edges = [];
-        ksort($dependencies, SORT_STRING);
-        foreach ($dependencies as $from => $targets) {
-            ksort($targets, SORT_STRING);
-            foreach (array_keys($targets) as $to) {
-                $nodes[$to] = true;
-                $edges[] = ['from' => $from, 'to' => $to];
-            }
-        }
-        ksort($nodes, SORT_STRING);
-        return ['nodes' => array_keys($nodes), 'edges' => $edges];
-    }
 }

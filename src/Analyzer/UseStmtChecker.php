@@ -8,18 +8,6 @@ use Gennadyterekhov\ImportLayersPhp\Dto\Config;
 
 final readonly class UseStmtChecker
 {
-    public function isOk(Config $config, string $namespaceCurrentlyBeingChecked, string $thingThatYouWantToImport, bool $debug = false): bool
-    {
-        $source = $this->getLayerNumber($config, $namespaceCurrentlyBeingChecked);
-        $target = $this->getLayerNumber($config, $thingThatYouWantToImport);
-        return $this->allowsDependency($source, $target);
-    }
-
-    public function allowsDependency(?int $source, ?int $target): bool
-    {
-        return $source === null || $target === null || $source >= $target;
-    }
-
     public function getLayerNumber(Config $config, string|array $symbols, ?string $path = null): ?int
     {
         $directory = $path === null ? '' : dirname($path);
