@@ -63,6 +63,22 @@ final readonly class App
         return $this->analyzer->analyze($this->graph);
     }
 
+    public function analyzeForCli(): AnalysisResult
+    {
+        $result = $this->analyzer->analyze($this->graph, deferPolicy: true);
+        $checked = Pipeline::check($result->pipeline);
+        $nodes = $result->graph['nodes'];
+        foreach ($checked['edges'] as $edge) {
+            $nodes[] = $edge['to'];
+        }
+        $nodes = array_values(array_unique($nodes));
+        sort($nodes, SORT_STRING);
+        return new AnalysisResult($checked['violations'], $result->problems, [
+            'nodes' => $nodes,
+            'edges' => $checked['edges'],
+        ]);
+    }
+
     public function analyzeFile(SplFileInfo $fi): AnalysisResult
     {
         return $this->analyzer->analyzeFile($fi);

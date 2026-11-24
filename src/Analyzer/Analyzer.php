@@ -30,7 +30,7 @@ final readonly class Analyzer
         $this->sourceParser = new SourceParser($parser);
     }
 
-    public function analyze(bool $graph = false): AnalysisResult
+    public function analyze(bool $graph = false, bool $deferPolicy = false): AnalysisResult
     {
         $selection = $this->config->paths ?: [$this->project->root];
         if ($this->config->dirToCheck !== '') {
@@ -44,7 +44,7 @@ final readonly class Analyzer
         $files = $selection === [$this->project->root]
             ? $selected
             : $this->project->files([$this->project->root], $this->config->ignoreTests);
-        return $this->analyzeFiles($selected, $files, $graph);
+        return $this->analyzeFiles($selected, $files, $graph, $deferPolicy);
     }
 
     public function analyzeFile(SplFileInfo $fileInfo): AnalysisResult
@@ -61,7 +61,7 @@ final readonly class Analyzer
      * @param array<string, string> $selected
      * @param array<string, string> $files
      */
-    private function analyzeFiles(array $selected, array $files, bool $graph): AnalysisResult
+    private function analyzeFiles(array $selected, array $files, bool $graph, bool $deferPolicy = false): AnalysisResult
     {
         $files += $selected;
         $symbols = new SymbolIndex();
@@ -71,12 +71,14 @@ final readonly class Analyzer
         $extractor = new ImportExtractor($symbols, $includes);
 
         $violations = [];
+        $references = [];
+        $collectGraph = $graph && !$deferPolicy;
         $dependencies = [];
         foreach ($parsed as $path => $blocks) {
             foreach ($blocks as $block) {
                 $sourceLayer = $this->useStmtChecker->getLayerNumber($this->config, $block->name, $path);
                 foreach ($extractor->extract($block, $files[$path]) as $import) {
-                    if ($graph && $import->targetPath !== null) {
+                    if ($collectGraph && $import->targetPath !== null) {
                         $dependencies[$path][$import->targetPath] = true;
                     }
                     $targetLayer = $this->useStmtChecker->getLayerNumber(
@@ -84,6 +86,18 @@ final readonly class Analyzer
                         $import->targetNames,
                         $import->targetPath,
                     );
+                    if ($deferPolicy) {
+                        $references[] = [
+                            'from' => $path,
+                            'to' => $import->targetPath ?? '',
+                            'specifier' => $import->name,
+                            'line' => $import->line,
+                            'fromLayer' => $sourceLayer === null ? '' : $this->config->layers[$sourceLayer],
+                            'toLayer' => $targetLayer === null ? '' : $this->config->layers[$targetLayer],
+                            'resolvedLayers' => true,
+                        ];
+                        continue;
+                    }
                     if (!$this->useStmtChecker->allowsDependency($sourceLayer, $targetLayer)) {
                         $from = $this->config->layers[$sourceLayer];
                         $to = $this->config->layers[$targetLayer];
@@ -93,7 +107,19 @@ final readonly class Analyzer
             }
         }
 
-        return new AnalysisResult($violations, $problems, $this->buildGraph($graph ? array_keys($selected) : [], $dependencies));
+        return new AnalysisResult(
+            $violations,
+            $problems,
+            $this->buildGraph($graph || $deferPolicy ? array_keys($selected) : [], $dependencies),
+            $deferPolicy ? [
+                'language' => 'php',
+                'interpreter' => PHP_BINARY,
+                'root' => $this->project->root,
+                'layers' => $this->config->layers,
+                'files' => array_keys($parsed),
+                'references' => $references,
+            ] : [],
+        );
     }
 
     /**

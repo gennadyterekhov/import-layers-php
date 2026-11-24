@@ -13,6 +13,7 @@ final readonly class AnalysisResult
         array $errors = [],
         public array $problems = [],
         public array $graph = ['nodes' => [], 'edges' => []],
+        public array $pipeline = [],
     ) {
         $this->errors = [...$problems, ...$errors];
         $this->violations = $errors;
