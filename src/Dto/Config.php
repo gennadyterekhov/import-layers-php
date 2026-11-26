@@ -11,5 +11,7 @@ final readonly class Config
         public bool $ignoreTests = false,
         public string $dirToCheck = '',
         public array $layers = [],
+        public array $paths = [],
+        public ?string $projectRoot = null,
     ) {}
 }

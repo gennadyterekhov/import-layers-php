@@ -5,9 +5,7 @@
     "ImportLayersPhp\\Dto",
     "ImportLayersPhp\\Project",
     "ImportLayersPhp\\Config",
-    "ImportLayersPhp\\Data",
-    "ImportLayersPhp\\Reporter",
-    "ImportLayersPhp\\FileChecker",
+    "ImportLayersPhp\\Syntax",
     "ImportLayersPhp\\Analyzer"
   ]
 }
