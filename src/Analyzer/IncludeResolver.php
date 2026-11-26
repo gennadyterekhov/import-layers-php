@@ -5,13 +5,6 @@ declare(strict_types=1);
 namespace Gennadyterekhov\ImportLayersPhp\Analyzer;
 
 use Gennadyterekhov\ImportLayersPhp\Project\Project;
-use PhpParser\Node\Expr;
-use PhpParser\Node\Expr\BinaryOp\Concat;
-use PhpParser\Node\Expr\Include_;
-use PhpParser\Node\Scalar\MagicConst\Dir;
-use PhpParser\Node\Scalar\MagicConst\File;
-use PhpParser\Node\Scalar\String_;
-use PhpParser\NodeFinder;
 
 final readonly class IncludeResolver
 {
@@ -21,9 +14,8 @@ final readonly class IncludeResolver
     /** @return iterable<array{string, int}> */
     public function imports(array $statements, string $source): iterable
     {
-        $finder = new NodeFinder();
-        foreach ($finder->findInstanceOf($statements, Include_::class) as $include) {
-            $literal = $this->staticPath($include->expr, $source);
+        foreach ($this->includesIn($statements) as $include) {
+            $literal = $this->staticPath($include['expr'], $source);
             if ($literal === null || $literal === '' || str_contains($literal, chr(0))) {
                 continue;
             }
@@ -31,31 +23,41 @@ final readonly class IncludeResolver
             foreach ([dirname($source), $this->projectRoot] as $directory) {
                 $absolute = realpath(Project::absolutePath($literal, $directory));
                 if ($absolute !== false && isset($this->relativeByAbsolute[$absolute])) {
-                    yield [$this->relativeByAbsolute[$absolute], $include->getStartLine()];
+                    yield [$this->relativeByAbsolute[$absolute], $include['attributes']['startLine']];
                     break;
                 }
             }
         }
     }
 
-    private function staticPath(Expr $expression, string $source): ?string
+    /** @return iterable<array<string, mixed>> */
+    private function includesIn(array $node): iterable
     {
-        if ($expression instanceof String_) {
-            return $expression->value;
+        if (($node['nodeType'] ?? null) === 'Expr_Include') {
+            yield $node;
         }
-        if ($expression instanceof Dir) {
-            return dirname($source);
-        }
-        if ($expression instanceof File) {
-            return $source;
-        }
-        if ($expression instanceof Concat) {
-            $left = $this->staticPath($expression->left, $source);
-            $right = $this->staticPath($expression->right, $source);
-            if ($left !== null && $right !== null) {
-                return $left . $right;
+        foreach ($node as $key => $child) {
+            if ($key !== 'attributes' && is_array($child)) {
+                yield from $this->includesIn($child);
             }
         }
-        return null;
+    }
+
+    private function staticPath(array $expression, string $source): ?string
+    {
+        return match ($expression['nodeType']) {
+            'Scalar_String' => $expression['value'],
+            'Scalar_MagicConst_Dir' => dirname($source),
+            'Scalar_MagicConst_File' => $source,
+            'Expr_BinaryOp_Concat' => $this->concatenate($expression, $source),
+            default => null,
+        };
+    }
+
+    private function concatenate(array $expression, string $source): ?string
+    {
+        $left = $this->staticPath($expression['left'], $source);
+        $right = $this->staticPath($expression['right'], $source);
+        return $left !== null && $right !== null ? $left . $right : null;
     }
 }

@@ -8,7 +8,7 @@ use RuntimeException;
 
 final class Pipeline
 {
-    public static function check(array $payload): array
+    public static function run(string $mode, array $payload): array
     {
         $checkout = dirname(__DIR__, 3);
         $local = is_file("$checkout/degra/go.mod");
@@ -17,7 +17,7 @@ final class Pipeline
         $command = $installed !== null
             ? [$installed]
             : ($local ? ['go', '-C', "$checkout/degra", 'run', '.'] : ['degra']);
-        array_push($command, '--project', $local ? $checkout : '');
+        array_push($command, $mode, $local ? $checkout : '');
 
         // File streams let the child write either output without blocking on pipes.
         $input = tmpfile();

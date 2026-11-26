@@ -8,26 +8,21 @@ use Gennadyterekhov\ImportLayersPhp\Dto\AnalysisResult;
 use Gennadyterekhov\ImportLayersPhp\Dto\Config;
 use Gennadyterekhov\ImportLayersPhp\Project\Project;
 use Gennadyterekhov\ImportLayersPhp\Syntax\NamespaceBlock;
-use Gennadyterekhov\ImportLayersPhp\Syntax\SourceParser;
+use Gennadyterekhov\ImportLayersPhp\Syntax\NamespaceBlocks;
 use Gennadyterekhov\ImportLayersPhp\Syntax\SymbolIndex;
-use PhpParser\Error;
-use PhpParser\Parser;
 use RuntimeException;
 use SplFileInfo;
 
 final readonly class Analyzer
 {
     private Project $project;
-    private SourceParser $sourceParser;
 
     public function __construct(
-        Parser $parser,
         private Config $config,
         private UseStmtChecker $useStmtChecker,
         private Debug $debug = new Debug(),
     ) {
         $this->project = new Project($config->projectRoot ?? Project::getProjectRoot());
-        $this->sourceParser = new SourceParser($parser);
     }
 
     public function analyze(bool $graph = false): AnalysisResult
@@ -66,7 +61,13 @@ final readonly class Analyzer
         $files += $selected;
         $symbols = new SymbolIndex();
 
-        [$parsed, $problems] = $this->indexSources($files, $selected, $symbols, $graph);
+        $snapshot = Pipeline::run('--parse-project', [
+            'language' => 'php',
+            'interpreter' => PHP_BINARY,
+            'root' => $this->project->root,
+            'files' => array_keys($files),
+        ]);
+        [$parsed, $problems] = $this->indexSources($files, $selected, $symbols, $graph, $snapshot);
         $includes = new IncludeResolver($this->project->root, array_flip($files));
         $extractor = new ImportExtractor($symbols, $includes);
 
@@ -93,12 +94,10 @@ final readonly class Analyzer
             }
         }
 
-        $checked = Pipeline::check([
+        $checked = Pipeline::run('--project', [
             'language' => 'php',
-            'interpreter' => PHP_BINARY,
-            'root' => $this->project->root,
             'layers' => $this->config->layers,
-            'files' => array_keys($parsed),
+            'trees' => (object) $snapshot['trees'],
             'references' => $references,
         ]);
         if (!$graph) {
@@ -118,37 +117,24 @@ final readonly class Analyzer
      * @param array<string, string> $selected
      * @return array{array<string, list<NamespaceBlock>>, list<string>}
      */
-    private function indexSources(array $files, array $selected, SymbolIndex $symbols, bool $graph): array
+    private function indexSources(array $files, array $selected, SymbolIndex $symbols, bool $graph, array $snapshot): array
     {
         $parsed = [];
         $problems = [];
-        foreach ($files as $relative => $path) {
+        $namespaces = new NamespaceBlocks();
+        foreach (array_keys($files) as $relative) {
             $checking = isset($selected[$relative]);
             if ($checking && $this->config->debug) {
                 $this->debug->processingFile($relative, $graph);
             }
 
-            $code = @file_get_contents($path);
-            if ($code === false) {
-                if ($checking) {
-                    $problems[] = "$relative: could not read source file";
-                }
+            if ($checking) {
+                array_push($problems, ...($snapshot['errors'][$relative] ?? []));
+            }
+            if (!array_key_exists($relative, $snapshot['trees'])) {
                 continue;
             }
-
-            try {
-                $blocks = $this->sourceParser->parse($code);
-            } catch (Error $error) {
-                if ($checking) {
-                    $problems[] = sprintf('%s:%d: %s', $relative, $error->getStartLine(), $error->getRawMessage());
-                }
-                continue;
-            } catch (RuntimeException $error) {
-                if ($checking) {
-                    $problems[] = "$relative: " . $error->getMessage();
-                }
-                continue;
-            }
+            $blocks = $namespaces->fromStatements($snapshot['trees'][$relative]);
             $symbols->addFile($relative, $blocks);
             if ($checking) {
                 $parsed[$relative] = $blocks;

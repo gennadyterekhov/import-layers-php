@@ -6,8 +6,6 @@ namespace Gennadyterekhov\ImportLayersPhp\Analyzer;
 
 use Gennadyterekhov\ImportLayersPhp\Syntax\NamespaceBlock;
 use Gennadyterekhov\ImportLayersPhp\Syntax\SymbolIndex;
-use PhpParser\Node\Stmt\GroupUse;
-use PhpParser\Node\Stmt\Use_;
 
 final readonly class ImportExtractor
 {
@@ -18,15 +16,15 @@ final readonly class ImportExtractor
     {
         $imports = [];
         foreach ($block->statements as $statement) {
-            if (!$statement instanceof Use_ && !$statement instanceof GroupUse) {
+            if (!in_array($statement['nodeType'], ['Stmt_Use', 'Stmt_GroupUse'], true)) {
                 continue;
             }
 
-            $prefix = $statement instanceof GroupUse ? $statement->prefix->toString() . '\\' : '';
-            foreach ($statement->uses as $item) {
-                $name = $prefix . $item->name->toString();
-                $path = $this->symbols->pathFor($item->type ?: $statement->type, $name);
-                $imports[] = new ImportReference($name, $item->getStartLine(), $path, [$name]);
+            $prefix = $statement['nodeType'] === 'Stmt_GroupUse' ? $statement['prefix']['name'] . '\\' : '';
+            foreach ($statement['uses'] as $item) {
+                $name = $prefix . $item['name']['name'];
+                $path = $this->symbols->pathFor($item['type'] ?: $statement['type'], $name);
+                $imports[] = new ImportReference($name, $item['attributes']['startLine'], $path, [$name]);
             }
         }
         foreach ($this->includes->imports($block->statements, $sourcePath) as [$path, $line]) {

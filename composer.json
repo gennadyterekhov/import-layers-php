@@ -19,10 +19,10 @@
         }
     ],
     "require-dev": {
-        "phpunit/phpunit": "^11"
+        "phpunit/phpunit": "^11",
+        "nikic/php-parser": "^5.3"
     },
     "require": {
-        "nikic/php-parser": "^5.3",
         "symfony/yaml": "^7.0"
     },
     "scripts": {

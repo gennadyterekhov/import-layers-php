@@ -8,7 +8,6 @@ use Gennadyterekhov\ImportLayersPhp\Config\ConfigService;
 use Gennadyterekhov\ImportLayersPhp\Dto\AnalysisResult;
 use Gennadyterekhov\ImportLayersPhp\Dto\Config;
 use InvalidArgumentException;
-use PhpParser\ParserFactory;
 use SplFileInfo;
 
 final readonly class App
@@ -54,8 +53,7 @@ final readonly class App
 
     public static function createAppWithConfig(Config $config, bool $graph = false): App
     {
-        $parser = (new ParserFactory())->createForHostVersion();
-        return new App(new Analyzer($parser, $config, new UseStmtChecker()), $graph);
+        return new App(new Analyzer($config, new UseStmtChecker()), $graph);
     }
 
     public function analyze(): AnalysisResult
